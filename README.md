@@ -1,5 +1,9 @@
 📌 Descrição
 
+FACULDADE GRAN (https://faculdade.grancursosonline.com.br/)
+
+Projeto Disciplina Projeto Integrador
+
 Este projeto consiste no desenvolvimento de uma API REST para gerenciamento de:
 
 Produtos
