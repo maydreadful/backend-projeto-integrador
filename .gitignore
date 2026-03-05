@@ -1,0 +1,12 @@
+# Pastas de dependências (nunca devem ir para o GitHub)
+node_modules/
+
+# Arquivos de log e sistema
+npm-debug.log*
+.DS_Store
+
+# O seu banco de dados local (para não sobrescrever o do Render)
+database.sqlite
+
+# Variáveis de ambiente sensíveis
+.env
