@@ -4,9 +4,9 @@
   "description": "Backend do sistema de Produtos e Fornecedores - Faculdade Gran",
   "main": "src/server.js",
   "scripts": {
-  "start": "node src/index.js",
-  "build": "npm install"
-},
+    "start": "node src/index.js",
+    "build": "npm install"
+  },
   "keywords": [],
   "author": "Seu Nome",
   "license": "ISC",
