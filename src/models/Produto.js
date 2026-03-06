@@ -13,7 +13,9 @@ const Produto = sequelize.define('Produto', {
     type: DataTypes.FLOAT,
     allowNull: false
   },
-  
+  codigoBarras: {
+    type: DataTypes.STRING
+  }
 });
 
 module.exports = Produto;

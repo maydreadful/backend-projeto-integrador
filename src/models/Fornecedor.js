@@ -1,17 +1,18 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+const sequelize = require('../config/database'); // Certifique-se que o caminho está correto
 
 const Fornecedor = sequelize.define('Fornecedor', {
   nome: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: false // Obrigatório
   },
-    email: { 
-      type: DataTypes.STRING,
-      },
-
   contato: {
-    type: DataTypes.STRING
+    type: DataTypes.STRING,
+    allowNull: true // Opcional para não travar o cadastro
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 });
 
