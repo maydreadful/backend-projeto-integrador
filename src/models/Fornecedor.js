@@ -6,13 +6,10 @@ const Fornecedor = sequelize.define('Fornecedor', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  cnpj: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  endereco: {
-    type: DataTypes.STRING
-  },
+    email: { 
+      type: DataTypes.STRING,
+      },
+
   contato: {
     type: DataTypes.STRING
   }
