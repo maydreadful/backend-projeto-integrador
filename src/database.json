@@ -1,0 +1,16 @@
+{
+  "fornecedores": [
+    { "nome": "Papelaria do Zé", "contato": "(85) 98888-7777", "email": "contato@papelariadoze.com" },
+    { "nome": "Ibyte", "contato": "(85) 98888-7777", "email": "vendas@ibyte.com.br" },
+    { "nome": "Limpeza Produtos", "contato": "(85) 98888-7777", "email": "contato@limpezaprodutos.com" }
+  ],
+  "produtos": [
+    { "nome": "Produtos de limpesza", "preco": 45.00 },
+    { "nome": "Papel ofício", "preco": 89.90 },
+    { "nome": "notebook", "preco": 2000.00 },
+    { "nome": "canetas", "preco": 25.00 },
+    { "nome": "Ebook Curso Ads", "preco": 45.90 },
+    { "nome": "Ebook Curso SEO", "preco": 89.00 },
+    { "nome": "Ebook Curso Copywriting", "preco": 35.00 }
+  ]
+}
