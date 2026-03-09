@@ -1,175 +1,89 @@
-const express = require("express");
-const cors = require("cors");
-const { Sequelize, DataTypes } = require("sequelize");
+const express = require('express');
+const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+const { Sequelize, DataTypes, Op } = require('sequelize');
 
 const app = express();
 
-app.use(cors());
+// 1. CONFIGURAÇÕES DE ACESSO E PARSER
+app.use(cors()); 
 app.use(express.json());
 
-/* =============================
-   BANCO DE DADOS (SQLite)
-============================= */
-
+// 2. CONEXÃO COM BANCO DE DATA (SQLite)
 const sequelize = new Sequelize({
-  dialect: "sqlite",
-  storage: "./database.sqlite",
-  logging: false,
+    dialect: 'sqlite',
+    storage: './database.sqlite',
+    logging: false
 });
 
-/* =============================
-   MODELOS
-============================= */
-
-const Fornecedor = sequelize.define("Fornecedor", {
-  nome: { type: DataTypes.STRING, allowNull: false },
-  contato: { type: DataTypes.STRING },
-  email: { type: DataTypes.STRING },
+// 3. MODELOS RETIFICADOS (Sem CNPJ para agilizar o cadastro)
+const Fornecedor = sequelize.define('Fornecedor', {
+    nome: { type: DataTypes.STRING, allowNull: false },
+    contato: { type: DataTypes.STRING },
+    email: { type: DataTypes.STRING }
 });
 
-const Produto = sequelize.define("Produto", {
-  nome: { type: DataTypes.STRING, allowNull: false },
-  preco: { type: DataTypes.FLOAT, allowNull: false },
-  descricao: { type: DataTypes.STRING },
-  codigoBarras: { type: DataTypes.STRING },
+const Produto = sequelize.define('Produto', {
+    nome: { type: DataTypes.STRING, allowNull: false },
+    preco: { type: DataTypes.FLOAT, allowNull: false },
+    descricao: { type: DataTypes.STRING },
+    quantidade: { type: DataTypes.INTEGER, defaultValue: 10 } // NOVO CAMPO PARA ESTOQUE
 });
 
-/* =============================
-   RELACIONAMENTO
-============================= */
-
-const Associacao = sequelize.define("Associacao", {});
-
+// Relacionamento N:N
+const Associacao = sequelize.define('Associacao', {});
 Produto.belongsToMany(Fornecedor, { through: Associacao });
 Fornecedor.belongsToMany(Produto, { through: Associacao });
 
-/* =============================
-   ROTAS PRODUTOS
-============================= */
+// 4. ROTAS PADRÃO (GET / POST)
+app.get('/produtos', async (req, res) => res.json(await Produto.findAll()));
+app.get('/fornecedores', async (req, res) => res.json(await Fornecedor.findAll()));
+app.post('/produtos', async (req, res) => res.status(201).json(await Produto.create(req.body)));
+app.post('/fornecedores', async (req, res) => res.status(201).json(await Fornecedor.create(req.body)));
 
-/* LISTAR */
-app.get("/produtos", async (req, res) => {
-  const produtos = await Produto.findAll();
-  res.json(produtos);
-});
+// ---------------------------------------------------------
+// 🚀 NOVOS ENDPOINTS PARA O PROJETO DE EXTENSÃO
+// ---------------------------------------------------------
 
-/* CRIAR */
-app.post("/produtos", async (req, res) => {
-  try {
-    const { nome, preco, descricao, codigoBarras } = req.body;
-
-    if (!nome || !preco) {
-      return res.status(400).json({
-        error: "Nome e preço são obrigatórios",
-      });
-    }
-
-    const produto = await Produto.create({
-      nome,
-      preco,
-      descricao,
-      codigoBarras,
+// Endpoint 1: Alerta de Estoque Baixo (GET)
+// Retorna materiais com menos de 5 unidades para evitar interrupção de serviços.
+app.get('/estoque/baixo', async (req, res) => {
+    const itens = await Produto.findAll({
+        where: { quantidade: { [Op.lt]: 5 } }
     });
-
-    res.status(201).json(produto);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    res.json(itens);
 });
 
-/* EDITAR */
-app.put("/produtos/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
+// Endpoint 2: Baixa de Material por Serviço (PATCH)
+// Deduz uma unidade do estoque ao realizar um piercing ou tattoo.
+app.patch('/produtos/:id/saida', async (req, res) => {
+    try {
+        const produto = await Produto.findByPk(req.params.id);
+        if (!produto) return res.status(404).json({ error: "Item não encontrado" });
 
-    const produto = await Produto.findByPk(id);
+        if (produto.quantidade > 0) {
+            produto.quantidade -= 1;
+            await produto.save();
+            res.json({ message: "Baixa realizada!", estoque_atual: produto.quantidade });
+        } else {
+            res.status(400).json({ error: "Estoque zerado!" });
+        }
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-    if (!produto) {
-      return res.status(404).json({ error: "Produto não encontrado" });
+// 5. INICIALIZAÇÃO E SEEDING
+const PORT = process.env.PORT || 3000;
+
+sequelize.sync().then(async () => {
+    // Carga inicial se o banco estiver vazio
+    const count = await Produto.count();
+    if (count === 0 && fs.existsSync('./database.json')) {
+        const dados = JSON.parse(fs.readFileSync('./database.json', 'utf-8'));
+        await Produto.bulkCreate(dados.produtos);
+        await Fornecedor.bulkCreate(dados.fornecedores);
+        console.log("Banco populado com sucesso! 🧛");
     }
-
-    await produto.update(req.body);
-
-    res.json(produto);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/* REMOVER */
-app.delete("/produtos/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const produto = await Produto.findByPk(id);
-
-    if (!produto) {
-      return res.status(404).json({ error: "Produto não encontrado" });
-    }
-
-    await produto.destroy();
-
-    res.json({ message: "Produto removido com sucesso" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/* =============================
-   ROTAS FORNECEDORES
-============================= */
-
-/* LISTAR */
-app.get("/fornecedores", async (req, res) => {
-  const fornecedores = await Fornecedor.findAll();
-  res.json(fornecedores);
-});
-
-/* CRIAR */
-app.post("/fornecedores", async (req, res) => {
-  try {
-    const fornecedor = await Fornecedor.create(req.body);
-    res.status(201).json(fornecedor);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/* REMOVER */
-app.delete("/fornecedores/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const fornecedor = await Fornecedor.findByPk(id);
-
-    if (!fornecedor) {
-      return res.status(404).json({ error: "Fornecedor não encontrado" });
-    }
-
-    await fornecedor.destroy();
-
-    res.json({ message: "Fornecedor removido com sucesso" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/* =============================
-   ROTA TESTE
-============================= */
-
-app.get("/", (req, res) => {
-  res.send("API Moth Piercing funcionando 🦇");
-});
-
-/* =============================
-   INICIAR SERVIDOR
-============================= */
-
-const PORT = process.env.PORT || 5000;
-
-sequelize.sync().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
-  });
+    
+    app.listen(PORT, () => console.log(`Servidor Moth Piercing online na porta ${PORT} 🚀`));
 });
